@@ -1,0 +1,13 @@
+%%-*- mode: erlang -*-
+{application, ekc, [
+	{description, "Erlang Kafka Client"},
+	{vsn, "0.1.0"},
+	{modules, []},
+	{registered, []},
+	{applications, [
+		kernel,
+		stdlib
+	]},
+	{mod, {ekc_application, []}},
+	{env, []}
+]}.
