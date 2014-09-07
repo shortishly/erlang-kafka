@@ -10,6 +10,9 @@ messaging system.
 
 EKC uses [erlang.mk](https://github.com/ninenines/erlang.mk). To build run `make`.
 
+[![Build Status](https://travis-ci.org/shortishly/erlang-kafka.svg)](https://travis-ci.org/shortishly/erlang-kafka)
+
+
 ## Client
 
 The Kafka protocol client runs as a OTP `gen_server`.
