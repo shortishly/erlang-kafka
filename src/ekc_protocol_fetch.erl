@@ -109,7 +109,5 @@ message_set(
 
 message_set(
   <<
-    _Offset:64/signed, 
-    MessageSize:32/signed, 
-    Partial/bytes
-  >>) when byte_size(Partial) < MessageSize -> [].
+    _Partial/bytes
+  >>)  -> [].

@@ -15,7 +15,8 @@
 -module(ekc).
 -behaviour(gen_server).
 
--export([start/0,
+-export([
+	 start/0,
 	 start/1,
 	 start_link/0,
 	 start_link/1, 
@@ -24,26 +25,35 @@
 	 consumer_metadata/2,
 	 fetch/5,
 	 offset/3,
-	 stop/1]).
+	 stop/1
+	]).
 
--export([error_code/1]).
+-export([
+	 error_code/1
+	]).
 
--export([init/1,
+-export([
+	 init/1,
 	 code_change/3,
 	 handle_call/3,
 	 handle_cast/2,
 	 handle_info/2,
-	 terminate/2]).
+	 terminate/2
+	]).
 
--export([make/0]).
+-export([
+	 make/0
+	]).
 
 
--export_type([message_set/0,
+-export_type([
+	      message_set/0,
 	      broker/0,
 	      partition/0,
 	      topic/0,
 	      metadata/0,
-	      error_code/0]).
+	      error_code/0
+	     ]).
 
 -include("ekc.hrl").
 
