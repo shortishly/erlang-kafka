@@ -89,7 +89,7 @@ message_set(
     Message:MessageSize/bytes, 
     Remainder/bytes
   >>) ->
-    <<CRC:32, MessageBody/binary>> = Message,
+    <<_CRC:32, MessageBody/binary>> = Message,
     message_set(Message, Offset, erlang:crc32(MessageBody), Remainder);
 
 message_set(
