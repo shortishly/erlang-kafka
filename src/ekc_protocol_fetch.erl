@@ -89,25 +89,29 @@ message_set(
     Message:MessageSize/bytes, 
     Remainder/bytes
   >>) ->
-
-    case Message of
-	<<
-	  CRC:32/signed, 
-	  Magic:8/signed, 
-	  Attributes:8/signed,
-	  -1:32/signed, 
-	  ValueSize:32/signed, 
-	  Value:ValueSize/bytes
-	>> ->
-	    [#message_set{
-		offset = Offset, 
-		crc = CRC, 
-		magic = Magic, 
-		attributes = Attributes, 
-		value = Value} | message_set(Remainder)]
-    end;
+    <<CRC:32, MessageBody/binary>> = Message,
+    message_set(Message, Offset, erlang:crc32(MessageBody), Remainder);
 
 message_set(
   <<
     _Partial/bytes
   >>)  -> [].
+
+
+message_set(<<
+	      CRC:32, 
+	      Magic:8/signed, 
+	      Attributes:8/signed,
+	      -1:32/signed, 
+	      ValueSize:32/signed, 
+	      Value:ValueSize/bytes
+	    >>, Offset, CRC, Remainder) ->
+    [#message_set{
+	offset = Offset, 
+	crc = CRC, 
+	magic = Magic, 
+	attributes = Attributes, 
+	value = Value} | message_set(Remainder)];
+message_set(_, _, _, <<>>) -> [].
+
+    

@@ -15,8 +15,10 @@
 -module(ekc_protocol_offset).
 -include("ekc.hrl").
 
--export([request/3,
-	 response/1]).
+-export([
+	 request/3,
+	 response/1
+	]).
 
 
 -spec response(<<_:32,_:_*8>>) -> {ok, list(ekc:topic())}.

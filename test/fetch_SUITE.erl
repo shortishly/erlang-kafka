@@ -36,5 +36,11 @@ response_test(Config) ->
     [Partition] = ekc_topic:partitions(Topic),
     no_error = ekc_partition:error_code(Partition),
     0 = ekc_partition:id(Partition),
-    124787 = ekc_partition:high_water_mark(Partition).
+    124787 = ekc_partition:high_water_mark(Partition),
+    38 = length(ekc_partition:message_sets(Partition)),
+    [M0, M1, M2, M3 | _] = ekc_partition:message_sets(Partition),
+    <<_:3/bytes, "The Project Gutenberg EBook of The Complete Works of William Shakespeare, by">> = ekc_message_set:value(M0),
+    <<"William Shakespeare">> = ekc_message_set:value(M1),
+    <<"">> = ekc_message_set:value(M2),
+    <<"This eBook is for the use of anyone anywhere at no cost and with">> = ekc_message_set:value(M3).
     
