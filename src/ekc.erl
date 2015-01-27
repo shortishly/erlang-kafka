@@ -218,10 +218,10 @@ handle_info({tcp, _, Part},
 	       parts = 
 		   <<
 		     Size:32/signed, 
-		     _/binary
+		     Data/binary
 		   >> = Parts} = S) when byte_size(
 					   <<
-					     Parts/binary, 
+					     Data/binary, 
 					     Part/binary
 					   >>) >= Size ->
     <<
