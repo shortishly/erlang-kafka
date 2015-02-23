@@ -5,5 +5,7 @@ otp_release:
   - 17.4
 
 before_install:
-- wget http://www.us.apache.org/dist/kafka/0.8.2.0/kafka_2.10-0.8.2.0.tgz -O kafka.tgz
-- mkdir -p kafka && tar xzf kafka.tgz -C kafka --strip-components 1   
+  - wget http://www.us.apache.org/dist/kafka/0.8.2.0/kafka_2.10-0.8.2.0.tgz -O kafka.tgz
+  - mkdir -p kafka && tar xzf kafka.tgz -C kafka --strip-components 1
+  - export PATH=${PATH}:${PWD}/kafka/bin
+  
