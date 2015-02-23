@@ -1,11 +1,9 @@
+---
 language: erlang
 script: "make tests"
 otp_release:
-   - 17.1
-   - 17.0
-   - R16B03-1
-   - R16B03
-   - R16B02
-   - R16B01
-   - R15B03
-   - R15B02
+  - 17.4
+
+before_install:
+- wget http://www.us.apache.org/dist/kafka/0.8.2.0/kafka_2.10-0.8.2.0.tgz -O kafka.tgz
+- mkdir -p kafka && tar xzf kafka.tgz -C kafka --strip-components 1   
