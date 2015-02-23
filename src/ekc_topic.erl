@@ -1,4 +1,4 @@
-%% Copyright (c) 2014 Peter Morgan <peter.james.morgan@gmail.com>
+%% Copyright (c) 2014-2015 Peter Morgan <peter.james.morgan@gmail.com>
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -13,9 +13,11 @@
 %% limitations under the License.
 
 -module(ekc_topic).
--export([error_code/1,
+-export([
+	 error_code/1,
 	 name/1,
-	 partitions/1]).
+	 partitions/1
+	]).
 
 -include("ekc.hrl").
 

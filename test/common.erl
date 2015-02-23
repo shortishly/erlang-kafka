@@ -20,7 +20,9 @@
 	 groups/1,
 	 tests/1,
 	 init_per_suite/1,
-	 protocol/1
+	 protocol/1,
+	 data_dir/1,
+	 priv_dir/1
 	]).
 
 all() ->
@@ -45,7 +47,7 @@ init_per_suite(Config) ->
     [{protocol, consult(Config, "protocol.terms")} | Config].
 
 consult(Config, Filename) ->
-    {ok, Parts} = file:consult(?config(data_dir, Config) ++ Filename),
+    {ok, Parts} = file:consult(filename:join(data_dir(Config), Filename)),
     
     <<Size:32/signed, Packet:Size/bytes>> = lists:foldl(fun(Part, A) ->
 							 <<A/binary, Part/binary>>
@@ -57,3 +59,9 @@ consult(Config, Filename) ->
 
 protocol(Config) ->
     ?config(protocol, Config).
+
+data_dir(Config) ->
+    ?config(data_dir, Config).
+
+priv_dir(Config) ->
+    ?config(priv_dir, Config).

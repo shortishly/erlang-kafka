@@ -1,4 +1,4 @@
-%% Copyright (c) 2014 Peter Morgan <peter.james.morgan@gmail.com>
+%% Copyright (c) 2014-2015 Peter Morgan <peter.james.morgan@gmail.com>
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -13,14 +13,16 @@
 %% limitations under the License.
 
 -module(ekc_partition).
--export([error_code/1,
+-export([
+	 error_code/1,
 	 id/1,
 	 leader/1,
 	 high_water_mark/1,
 	 replicas/1,
 	 isr/1,
 	 offsets/1,
-	 message_sets/1]).
+	 message_sets/1
+	]).
 
 -include("ekc.hrl").
 

@@ -1,4 +1,4 @@
-%% Copyright (c) 2014 Peter Morgan <peter.james.morgan@gmail.com>
+%% Copyright (c) 2014-2015 Peter Morgan <peter.james.morgan@gmail.com>
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 
 -module(ekc_protocol_offset).
 -include("ekc.hrl").
+-include("ekc_protocol.hrl").
 
 -export([
 	 request/3,
@@ -21,19 +22,17 @@
 	]).
 
 
--spec response(<<_:32,_:_*8>>) -> {ok, list(ekc:topic())}.
-
-
-request(ReplicaId, Topics, #state{} = S) ->
+request(ReplicaId, Topics, #protocol_state{} = S) ->
     ekc_protocol:request(?OFFSET_REQUEST, 
 			 <<
 			   ReplicaId:32/signed, 
-			   (ekc_protocol:topics(Topics))/binary
+			   (ekc_protocol:encode(topics, Topics))/binary
 			 >>,
 			 S).
 
 
 
+-spec response(<<_:32,_:_*8>>) -> {ok, list(ekc:topic())}.
 response(
   <<
     NumberOfTopics:32/signed, 
@@ -75,6 +74,6 @@ partitions(N,
     partitions(N-1, 
 	       Remainder, 
 	       [#partition{id = Partition, 
-			   error_code = ekc:error_code(ErrorCode), 
+			   error_code = ekc_protocol:error_code(ErrorCode), 
 			   offsets = [Offset || <<Offset:64/signed>> <= Offsets]} | A]).
 														

@@ -1,4 +1,4 @@
-%% Copyright (c) 2014 Peter Morgan <peter.james.morgan@gmail.com>
+%% Copyright (c) 2014-2015 Peter Morgan <peter.james.morgan@gmail.com>
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -15,11 +15,11 @@
 -module(ekc_application).
 -behaviour(application).
 
--export([start/0,
+-export([
+	 start/0,
 	 start/2,
-	 stop/1]).
-
-
+	 stop/1
+	]).
 
 start(_Type, _Args) ->
 	ekc_supervisor:start_link().
@@ -27,14 +27,5 @@ start(_Type, _Args) ->
 stop(_State) ->
 	ok.
 
-
 start() ->
-    ok = ensure(ekc).
-
-ensure(Application) ->    
-    ensure_started(application:start(Application)).
-
-ensure_started({error, {already_started, _}}) ->    
-    ok;
-ensure_started(ok) -> 
-    ok.
+    application:ensure_all_started(ekc).

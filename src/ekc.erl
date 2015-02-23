@@ -1,4 +1,4 @@
-%% Copyright (c) 2014 Peter Morgan <peter.james.morgan@gmail.com>
+%% Copyright (c) 2014-2015 Peter Morgan <peter.james.morgan@gmail.com>
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -25,11 +25,8 @@
 	 consumer_metadata/2,
 	 fetch/5,
 	 offset/3,
-	 stop/1
-	]).
-
--export([
-	 error_code/1
+	 stop/1,
+	 test/0
 	]).
 
 -export([
@@ -52,11 +49,12 @@
 	      partition/0,
 	      topic/0,
 	      metadata/0,
-	      error_code/0
+	      error_code/0,
+	      consumer_metadata/0
 	     ]).
 
 -include("ekc.hrl").
-
+-include("ekc_protocol.hrl").
 
 
 -type error_code() :: no_error |
@@ -82,6 +80,7 @@
 -opaque partition() :: #partition{}.
 -opaque topic() :: #topic{}.
 -opaque metadata() :: #metadata{}.
+-opaque consumer_metadata() :: #consumer_metadata{}.
 
 
 
@@ -133,7 +132,7 @@ consumer_metadata(Server, ConsumerGroup) ->
 
 
 stop(Server) ->
-    gen_server:call(Server, stop).
+    gen_server:cast(Server, stop).
     
     
     
@@ -141,31 +140,9 @@ stop(Server) ->
 
 
 init(Parameters) ->
-    init(Parameters, #state{}).
-
-init([{port, Port} | T], S) when is_integer(Port) ->
-    init(T, S#state{port = Port});
-
-init([{host, Host} | T], S) -> 
-    init(T, S#state{host = Host});
-
-init([{correlation_id, CorrelationId} | T], S) when is_integer(CorrelationId) ->
-    init(T, S#state{correlation_id = CorrelationId});
-
-init([{client_id, ClientId} | T], S) when is_binary(ClientId) ->
-    init(T, S#state{client_id = ClientId});
-
-init([], #state{host = Host, port = Port} = S) ->
-    case gen_tcp:connect(Host, Port, [{mode, binary}, {active, once}]) of
-	{ok, Socket} ->
-	    {ok, S#state{socket = Socket}};
-
-	{error, Reason} ->
-	    {stop, Reason}
-    end.
-
-
-
+    [self() ! Parameter || Parameter <- Parameters],
+    self() ! connect,
+    {ok, #protocol_state{}}.
 
 handle_call(metadata, From, S) ->
     make_request(ekc_protocol_metadata:request(S), 
@@ -195,26 +172,45 @@ handle_call({consumer_metadata, ConsumerGroup}, From, S) ->
     make_request(ekc_protocol_consumer_metadata:request(ConsumerGroup, S), 
 		 From, 
 		 fun ekc_protocol_consumer_metadata:response/1, 
-		 S);
-
-handle_call(stop, _, S) ->
-    {stop, normal, ok, S}.
+		 S).
 
 
-handle_cast(_, S) ->
-    {stop, abnormal, S}.
+handle_cast(stop, S) ->
+    {stop, normal, S}.
 
+
+
+handle_info({port, Port}, S) when is_integer(Port) ->
+    {noreply, S#protocol_state{port = Port}};
+
+handle_info({host, Host}, S) -> 
+    {noreply, S#protocol_state{host = Host}};
+
+handle_info({correlation_id, CorrelationId}, S) when is_integer(CorrelationId) ->
+    {noreply, S#protocol_state{correlation_id = CorrelationId}};
+
+handle_info({client_id, ClientId}, S) when is_binary(ClientId) ->
+    {noreply, S#protocol_state{client_id = ClientId}};
+
+handle_info(connect, #protocol_state{host = Host, port = Port} = S) ->
+    case gen_tcp:connect(Host, Port, [{mode, binary}, {active, once}]) of
+	{ok, Socket} ->
+	    {noreply, S#protocol_state{socket = Socket}};
+
+	{error, Reason} ->
+	    {stop, Reason}
+    end;
 
 handle_info({tcp, _, 
 	     <<
 	       Size:32/signed, 
 	       Remainder/binary
 	     >> = Packet},
-	    #state{parts = <<>>} = S) when Size == byte_size(Remainder) ->
+	    #protocol_state{parts = <<>>} = S) when Size == byte_size(Remainder) ->
     process_packet(Packet, S);
 
 handle_info({tcp, _, Part}, 
-	    #state{
+	    #protocol_state{
 	       parts = 
 		   <<
 		     Size:32/signed, 
@@ -233,16 +229,16 @@ handle_info({tcp, _, Part},
       <<
 	Size:32, 
 	Packet/binary
-      >>, S#state{parts = Remainder});
+      >>, S#protocol_state{parts = Remainder});
 
 
 handle_info({tcp, _, Part}, 
-	    #state{
+	    #protocol_state{
 	       parts = Parts, 
 	       socket = Socket} = S) ->
     case active(Socket, once) of
 	ok ->
-	    {noreply, S#state{
+	    {noreply, S#protocol_state{
 			parts = 
 			    <<
 			      Parts/binary, 
@@ -254,7 +250,7 @@ handle_info({tcp, _, Part},
     end;
 
 handle_info({tcp_closed, _}, S) ->
-    {stop, abnormal, S}.
+    {stop, normal, S}.
 
 
 
@@ -270,14 +266,14 @@ terminate(_, _) ->
 -spec make_request(#request{}, 
 		   {pid(), term()}, 
 		   ekc_protocol:handler(), 
-		   #state{}) -> {noreply, #state{}} | {stop, _, _, #state{}}.
+		   #protocol_state{}) -> {noreply, #protocol_state{}} | {stop, _, _, #protocol_state{}}.
 
 make_request(#request{
 		packet = Packet, 
 		state = S2}, 
 	     From, 
 	     Handler, 
-	     #state{
+	     #protocol_state{
 		correlation_id = CorrelationId, 
 		requests = Requests, 
 		socket = Socket} = S1) ->
@@ -286,7 +282,7 @@ make_request(#request{
 	    case active(Socket, once) of
 		ok ->
 		    {noreply, 
-		     S2#state{
+		     S2#protocol_state{
 		       requests = orddict:store(CorrelationId, 
 						#response{
 						   from = From, 
@@ -307,7 +303,7 @@ process_packet(
     Size:32/signed, 
     Packet:Size/bytes
   >>,
-  #state{
+  #protocol_state{
      requests = Requests, 
      socket = Socket} = S) ->
 
@@ -321,7 +317,7 @@ process_packet(
 	    gen_server:reply(From, ResponseHandler(Remainder)),
 	    case active(Socket, once) of
 		ok ->
-		    {noreply, S#state{requests = orddict:erase(CorrelationId, Requests)}};
+		    {noreply, S#protocol_state{requests = orddict:erase(CorrelationId, Requests)}};
 
 		{error, _} = Reason ->
 		    {stop, Reason, S}
@@ -343,44 +339,22 @@ active(Socket, HowMuch) ->
 
 
 
-
-
-error_code(0) ->
-    no_error;
-error_code(-1) ->
-    unknown;
-error_code(1) ->
-    offset_out_of_range;
-error_code(2) ->
-    invalid_message;
-error_code(3) ->
-    unknown_topic_or_partition;
-error_code(4) ->
-    invalid_message_size;
-error_code(5) ->
-    leader_not_available;
-error_code(6) ->
-    not_leader_for_partition;
-error_code(7) ->
-    request_timed_out;
-error_code(8) ->
-    broker_not_available;
-error_code(9) ->
-    replica_not_available;
-error_code(10) ->
-    message_size_too_large;
-error_code(11) ->
-    stale_controller_epoch;
-error_code(12) ->
-    offset_metadata_too_large;
-error_code(14) ->
-    offsets_load_in_progress;
-error_code(15) ->
-    consumer_coordinator_not_available;
-error_code(16) ->
-    not_coordinator_for_consumer.
-
-
 make() ->
     make:all([load]).
     
+
+
+stream() ->
+    fun(MessageSet) ->
+	    error_logger:info_report([{message_set, ekc_message_set:value(MessageSet)}]),
+	    ok
+    end.
+
+
+test() ->
+    {ok, C} = ekc_cluster:start("dev001.local", 9092),
+    sys:trace(C, true),
+    ekc_cluster:topics(C),
+    ekc_cluster:stream(C, <<"test">>, <<"pg100">>, stream()),
+    timer:sleep(60000),
+    ekc_cluster:stop(C).

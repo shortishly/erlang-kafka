@@ -1,4 +1,4 @@
-%% Copyright (c) 2014 Peter Morgan <peter.james.morgan@gmail.com>
+%% Copyright (c) 2014-2015 Peter Morgan <peter.james.morgan@gmail.com>
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -14,32 +14,23 @@
 
 -module(ekc_protocol_metadata).
 -include("ekc.hrl").
+-include("ekc_protocol.hrl").
 
--export([request/1,
+-export([
+	 request/1,
 	 request/2,
-	 response/1]).
+	 response/1
+	]).
 
 
-request(#state{} = S) ->
+request(#protocol_state{} = S) ->
     request([], S).
 
-request(TopicNames, #state{} = S) ->
-    Topics = list_to_binary([
-			     <<
-			       (byte_size(Name)):16/signed, 
-			       Name/bytes
-			     >> || Name <- TopicNames]),
-    ekc_protocol:request(?METADATA_REQUEST, 
-			 <<
-			   (length(TopicNames)):32/signed, 
-			   Topics/bytes
-			 >>,
-			 S).
-
+request(TopicNames, #protocol_state{} = S) ->
+    ekc_protocol:request(?METADATA_REQUEST, ekc_protocol:encode(array, [ekc_protocol:encode(string, Name) || Name <- TopicNames]), S).
 
 
 -spec response(<<_:32,_:_*8>>) -> {ok, ekc:metadata()}.
-
 response(
   <<
     NumberOfBrokers:32/signed, 
@@ -72,7 +63,7 @@ topics(N,
     {Partitions, Remainder} = partitions(PartitionLength, PartitionsRemainder, []),
     topics(N-1, 
 	   Remainder, 
-	   [#topic{error_code = ekc:error_code(ErrorCode), 
+	   [#topic{error_code = ekc_protocol:error_code(ErrorCode), 
 		   name = TopicName, 
 		   partitions = Partitions} | A]).
 
@@ -100,7 +91,7 @@ partitions(N,
     {ISR, Remainder} = isrs(NumberOfISR, ISRRemainder, []),
     partitions(N-1, 
 	       Remainder, 
-	       [#partition{error_code = ekc:error_code(ErrorCode), 
+	       [#partition{error_code = ekc_protocol:error_code(ErrorCode), 
 			   id = Id, 
 			   leader = Leader, 
 			   replicas = Replicas, 

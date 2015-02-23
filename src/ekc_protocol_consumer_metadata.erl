@@ -1,4 +1,4 @@
-%% Copyright (c) 2014 Peter Morgan <peter.james.morgan@gmail.com>
+%% Copyright (c) 2014-2015 Peter Morgan <peter.james.morgan@gmail.com>
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -14,16 +14,15 @@
 
 -module(ekc_protocol_consumer_metadata).
 -include("ekc.hrl").
+-include("ekc_protocol.hrl").
 
--export([request/2,
-	 response/1]).
+-export([
+	 request/2,
+	 response/1
+	]).
 
 request(ConsumerGroup, S) ->
-    ekc:request(?CONSUMER_METADATA_REQUEST, 
-		<<
-		  (byte_size(ConsumerGroup)):16/signed, 
-		  ConsumerGroup/binary
-		>>, S).
+    ekc_protocol:request(?CONSUMER_METADATA_REQUEST, ekc_protocol:encode(string, ConsumerGroup), S).
 
 response(
   <<
@@ -33,5 +32,11 @@ response(
     Host:HostLength/bytes, 
     Port:32/signed
   >>) ->
-    {ok, {ekc:error_code(ErrorCode), Id, Host, Port}}.
+    {ok, #consumer_metadata {
+	    error_code = ekc_protocol:error_code(ErrorCode),
+	    id = Id,
+	    host = Host,
+	    port = Port
+	   }
+    }.
 
